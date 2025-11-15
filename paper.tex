@@ -8,6 +8,8 @@
 \usepackage{xcolor}
 \usepackage[perpage]{footmisc}
 \usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{makecell}
 
 \graphicspath{ {./resources/} }
 
@@ -62,7 +64,7 @@
     Při porovnání (viz. \autoref{fig:matching}) dvou sítnic se nejprve body zarovnají podle středu optického disku a poté se určí počet bodů, které jsou si podobné na obou obrázcích (pomocí stromové datové struktury \emph{KDTree}). 
     \begin{figure}
         \begin{center}
-            \includegraphics[width=0.5\textwidth]{matching.png}
+            \includegraphics[width=0.95\columnwidth]{matching.png}
         \end{center}
         \caption{Zarovnání a porovnání křížových bodů 2 fotografií sítnic stejného oka.}
         \label{fig:matching}
@@ -75,7 +77,7 @@
 
     \begin{figure*}[ht]
         \begin{center}
-            \includegraphics[width=0.75\textwidth]{bsn.png}
+            \includegraphics[width=0.70\textwidth]{bsn.png}
         \end{center}
         \caption{Porovnání dvou bitových masek cév kolem okruží optického disku.}\label{fig:blindspot}
     \end{figure*}
@@ -96,7 +98,64 @@
     Poslední metoda (embedding slepé skvrny), podobně jako u té první, byla vyhodnocována za pomoci kosinové podobnosti. 
     U této metody byla průměrná hodnota kosinovy podobnosti 0,929. V jednom ze šesti případů byl uživatel identifikován špatně, kde podobnost predikcí první a druhé sítnice byly velmi podobné.
     Pokudbychom uvažovali pouze správné detekce, průměrná hodnota kosinovy podobnosti by byla 0,983.
-    Podobně jako u ostatních metod, i v tomto případě byla chybná identifikace zaviněna nesprávnou detekcí optického disku.
+    Podobně jako u ostatních metod, i v tomto případě byla chybná identifikace zaviněna
+    nesprávnou detekcí optického disku. Výsledky jsou zobrazeny
+    v \autoref{tab:resultCosineSimilarity}
+    a \autoref{tab:resultCrossing}.
+
+    \begin{table}[t]
+      \centering
+      \catcode`\-=12
+      \resizebox{\columnwidth}{!}{
+        \begin{tabular}{|c|c|c|c|c|}
+          \hline
+          \multirow{2}{*}{\textbf{Sítnice}} & \multicolumn{2}{c|}{\textbf{Okruží slepé
+          skvrny}}
+          & \multicolumn{2}{c|}{\textbf{Embedding slepé skvrny}} \\ 
+          \cline{2-5}
+          & \textbf{Podobnost} & \textbf{Správnost} & \textbf{Podobnost}
+          & \textbf{Správnost} \\
+          \hline
+          Osoba 1 & 0,845 & Ano & 0,984 & Ano \\ \hline
+          Osoba 2 & 0,993 & Ano & ---   & Ne  \\ \hline
+          Osoba 3 & 0,995 & Ano & 0,988 & Ano \\ \hline
+          Osoba 4 & 0,997 & Ano & 0,979 & Ano \\ \hline
+          Osoba 5 & 0,994 & Ano & 0,984 & Ano \\ \hline
+          Osoba A & 0,959 & Ano & 0,974 & Ano \\
+          \hline
+        \end{tabular}
+      }
+      \caption{Porovnání metod detekce podle okruží a embeddingu slepých skvrn. Druhá
+      metoda nedokázala správně detekovat druhou osobu a jelikož predikovaná osoba nebyla
+      mezi prvními dvěma nejlepšími výsledky, hodnotu jsme ponechali prázdnou.}
+      \label{tab:resultCosineSimilarity}
+    \end{table}
+
+    \begin{table}[t]
+      \centering
+      \catcode`\-=12
+      \resizebox{\columnwidth}{!}{
+        \begin{tabular}{|c|c|c|c|c|}
+          \hline
+          \multirow{2}{*}{\textbf{Sítnice}} & \multicolumn{2}{c|}{\textbf{Metoda prahování}}
+          & \multicolumn{2}{c|}{\textbf{Metoda koncentrace bodů}} \\ 
+          \cline{2-5}
+          & \makecell{\textbf{Počet shod} \\ \textbf{(podíl)}} & \textbf{Správnost}
+          & \makecell{\textbf{Početshod} \\ \textbf{(podíl)}} & \textbf{Správnost} \\
+          \hline
+          Osoba 1 & 44 (81,5 \%) & Ano & 39 (83 \%)   & Ano \\ \hline
+          Osoba 2 & 22 (30,1 \%) & Ano & 11 (16,9 \%) & Ne  \\ \hline
+          Osoba 3 & 49 (89,1 \%) & Ano & 38 (80,9 \%) & Ano \\ \hline
+          Osoba 4 & 55 (82,1 \%) & Ano & 46 (76,7 \%) & Ano \\ \hline
+          Osoba 5 & 36 (76,6 \%) & Ano & 29 (74,4 \%) & Ano \\ \hline
+          Osoba A & 30 (50,8 \%) & Ano & 28 (48,4 \%) & Ano \\
+          \hline
+        \end{tabular}
+      }
+      \caption{Porovnání metod detekce podle okruží a embeddingu slepých skvrn. Hodnoty
+      ukazují počet shodných bodů a procentuální shoda vůči všech bodů křížení.}
+      \label{tab:resultCrossing}
+    \end{table}
 
     \section{Závěr}
     V tomto projektu jsme vyzkoušeli různé metody identifikace osob za pomocí obrázků sítnice. Všechny metody si předzpracováváli obrázek pro zkvalitnění vlastností, se kterými metody pracovaly.
