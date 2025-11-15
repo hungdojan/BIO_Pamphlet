@@ -1,0 +1,114 @@
+\documentclass[a4paper,10pt,twocolumn]{article}
+\usepackage[czech]{babel}
+\usepackage[left=2cm,text={17cm,24cm},top=3cm]{geometry}
+\usepackage[hidelinks]{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage[perpage]{footmisc}
+\usepackage{graphicx}
+
+\graphicspath{ {./resources/} }
+
+\definecolor{gray}{rgb}{0.95,0.95,0.95}
+\definecolor{darkred}{rgb}{0.545,0,0}
+
+\title{Identifikace osoby na základě sítnice oka}
+
+\author{Hung Do, Vojtěch Orava}
+
+\addto\extrasczech{%
+  \renewcommand{\sectionautorefname}{Sekce}
+  \renewcommand{\subsectionautorefname}{Podsekce}
+  \renewcommand{\subsubsectionautorefname}{Podpodsekce}
+  \renewcommand{\paragraphautorefname}{Odstavec}
+  \renewcommand{\subparagraphautorefname}{Pododstavec}
+  \renewcommand{\figureautorefname}{obrázek}
+  \renewcommand{\tableautorefname}{Tabulka}
+  \renewcommand{\equationautorefname}{Rovnice}
+  \renewcommand{\itemautorefname}{Položka}
+  \renewcommand{\pageautorefname}{Strana}
+}
+
+
+\begin{document}
+    \maketitle
+    \thispagestyle{empty}
+    \section{Úvod}
+    Biometrie je vědní obor zabývajícím se statistickými měřeními a analýzou biologických rysů. 
+    V oboru informatiky se tento obor zabývá identifikací a verifikací osob na základě charakteristik a chování daných jedinců.
+    Mezi nejznámější metody patří rozpoznávání pomocí \textbf{otisku prstů}, nebo \textbf{obličejů}. 
+
+    Náš projekt se zabýval návrhem a implementací uživatelské aplikace sloužící k identifikaci osob na základě sítnice oka.
+    Samotné rozpoznávání je založené na třech odlišných metod: podobnost \textbf{bodů křížení cév}, \textbf{okruží} a \textbf{embedding slepých skvrn}.
+
+    \section{Návrh a implementace jednotlivých metod}
+    Zadáním projektu byla implementace identifikace sítnice. Uživatel nahraje obrázek sítnice, která se porovná sítnicemi uložené v databázi.
+    Poté, podle vybrané metody, spočítá a vrátí sítnici s nejvýšší mírou shody.
+
+    \subsection{Detekce podle okruží slepé skvrny}
+    Každý obrázek sítnice se přetransformuje to čtvercového rozměru 600x600 pixelů. Následně algoritmus vyhledá barevné intenzity v obrazu detekuje slepou skvrnu.
+    Slepá skvrna se odřízne a pomocí filtračních operací (metoda Frangi) se segmentují cévy ve slepé skvrně (bitová maska viz. \autoref{fig:blindspot}. Algoritmus vypočítá tloušťku a úhly cév na okruží slepé skvrny.
+    Celkem je zpracováno 36 úhlů a vzniklý vektor se uloží do databáze pro pozdější porovnání.
+    
+    \subsection{Detekce podle bodů křížení cév}
+    \label{ssec:crossing}
+    Tento algoritmus pracuje s předtrénovaným modelem, který z přijatého obrázku vysegmentuje bitovou masku cév. 
+    Algoritmus nejprve předzpracuje obrázek (změní rozměry a zvýší kontrast), poté z obrázku detekuje optický disk a bitovou masku cévní struktury.
+    Informace o poloze a rozměrech optického disku slouží pro zarovnání dvou obrázků sítnice. Samotný výpočet je též založený na barevné intenzite, nebo
+    koncentrace křížových bodů. Mezi křížové body se řadí cévní překryvy, nebo větvení. Do databáze se nakonec ukládá vektor s informacemi o optické disku (střed a poloměr) a seznam křížových bodů.
+
+    Při porovnání (viz. \autoref{fig:matching}) dvou sítnic se nejprve body zarovnají podle středu optického disku a poté se určí počet bodů, které jsou si podobné na obou obrázcích (pomocí stromové datové struktury \emph{KDTree}). 
+    \begin{figure}
+        \begin{center}
+            \includegraphics[width=0.5\textwidth]{matching.png}
+        \end{center}
+        \caption{Zarovnání a porovnání křížových bodů 2 fotografií sítnic stejného oka.}
+        \label{fig:matching}
+    \end{figure}
+    
+
+    \subsection{Detekce pomocí embedding slepé skvrny}
+    Metoda nejprve obrázek transformuje do čtvercových rozměrů 600x600 pixelů, a poté odřízne oblast optického disku. 
+    Za pomoci předtrénovaného modelu je obraz zakódován do embeddingu (vektor s hodnotami vystihující vlastnosti obrázku). Získaný embedding je uložen do databáze pro pozdější porovnání.
+
+    \begin{figure*}[ht]
+        \begin{center}
+            \includegraphics[width=0.75\textwidth]{bsn.png}
+        \end{center}
+        \caption{Porovnání dvou bitových masek cév kolem okruží optického disku.}\label{fig:blindspot}
+    \end{figure*}
+
+    \section{Výsledky testování}
+    Efektivnost algoritmů se testovalo na menší databázi o šesti sítnicích. Implementovali jsme jednoduché uživatelské prostředí, kde uživatel nejprve inicializuje databázi a poté nahrává samotné obrázky sítnic pro identifikaci.
+    Výstupem aplikace jsou informace o dvou sítnicích s nejvyšší pravděpodobností shody (viz. \autoref{fig:gui}). Pro vyhodnocování metod byly vybrány \emph{kosinova podobnost} (hodnoty se pohybují od -1 až 1; čím blíže se hodnota blíží k 1, tím vyšší je podobnost sítnic) a \emph{počet shodných bodů}.
+
+    U první metody (detekce podle okruží slepé skvrny) byla průměrná hodnota kosinovy podobnosti u správně identifikovaných sítnic 0.956. 
+    Ukázalo se, že model vrací vysokou podobnost (hodnoty kolem 0,70, nejvyšší dokonce 0,94) i pro sítnice jiných osob a to z důvodu špatně detekovaných optických disků.
+    V některých případech metoda detekovala a vyhodnocovala okruží odlesků z blesku při focení místo optického disku.
+
+    Druhá metoda zabývající se křížení cév, byly použity dva různé metody vyhledání pozice optického disku (rozebráno v \autoref{ssec:crossing}).
+    Průměrný počet shodných bodů činilo kolem 63 \% vůči všech detekovaných bodů jedné ze sítnic.
+    To je zapříčeno z důvodu špatného zarovnání obou sítnic a neodstranění bodů křížení, které se nenacházejí v průniku obou sítnic.
+    Nicméně je nutno podotknout, že při přesné zarovnání podle optického disku, bylo u první predikované sítnice nalezeno o 50 \% více shodných bodů, než na druhém místě.
+
+    Poslední metoda (embedding slepé skvrny), podobně jako u té první, byla vyhodnocována za pomoci kosinové podobnosti. 
+    U této metody byla průměrná hodnota kosinovy podobnosti 0,929. V jednom ze šesti případů byl uživatel identifikován špatně, kde podobnost predikcí první a druhé sítnice byly velmi podobné.
+    Pokudbychom uvažovali pouze správné detekce, průměrná hodnota kosinovy podobnosti by byla 0,983.
+    Podobně jako u ostatních metod, i v tomto případě byla chybná identifikace zaviněna nesprávnou detekcí optického disku.
+
+    \section{Závěr}
+    V tomto projektu jsme vyzkoušeli různé metody identifikace osob za pomocí obrázků sítnice. Všechny metody si předzpracováváli obrázek pro zkvalitnění vlastností, se kterými metody pracovaly.
+    Z výsledků testování jsme došli k názoru, že naše metody jsou velmi náchylné na kvalitě vstupního obrazu.
+    V případě přítomností odlesků nebo tmavých fotek, měly všechny naše algoritmy problém vyhledat pozici optického disku. Nicméně, při optimálních podmínek všechny metody správně identifikovali sítnice, mnohdy i s vysokou mírou jistoty.
+
+    \begin{figure*}[ht]
+        \begin{center}
+            \includegraphics[width=0.95\textwidth]{gui.png}
+        \end{center}
+        \caption{Vzhled grafického uživatelského rozhraní.}\label{fig:gui}
+    \end{figure*}
+    
+
+\end{document}
